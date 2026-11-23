@@ -10,7 +10,7 @@
 
 **Full demo (48 seconds):** create a request → the participant picks a time in chat → confirm → Google Meet invite.
 
-https://github.com/user-attachments/assets/145e20f3-5208-4c64-9ca4-c843dfa2a649
+https://github.com/user-attachments/assets/fbff4410-2097-4fad-9ff0-461f302793ac
 
 ## Purpose
 
