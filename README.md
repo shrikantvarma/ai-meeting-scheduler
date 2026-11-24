@@ -8,7 +8,7 @@
 
 *Automated test run: a participant who keeps changing their mind. Monday, then Tuesday, then Wednesday, then booked.*
 
-**Full demo (48 seconds):** create a request → the participant picks a time in chat → confirm → Google Meet invite.
+**Full demo (48 seconds)** covers creating a request, the participant picking a time in chat, the organizer confirming, and the Google Meet invite.
 
 https://github.com/user-attachments/assets/fbff4410-2097-4fad-9ff0-461f302793ac
 
@@ -16,7 +16,7 @@ https://github.com/user-attachments/assets/fbff4410-2097-4fad-9ff0-461f302793ac
 
 **Hypothesis:** booking links that show every open slot work against you. Too much choice makes people put off booking, and an easy pick is an easy cancel or reschedule.
 
-A conversation books better. The other person says what suits them, the assistant agrees a time in a few messages, and they leave with a commitment rather than a menu. As a side effect, nobody sees anyone's calendar.
+A conversation books better. The other person says what suits them, the assistant agrees a time in a few messages, and they leave with a booked time. As a side effect, nobody sees anyone's calendar.
 
 ## What it does
 
@@ -43,11 +43,11 @@ flowchart LR
 
 The approach, in five decisions:
 
-- **The model proposes, a person confirms.** The assistant has no tool that books anything. It can only record a proposed time. The organizer's one-click confirm is the only path that writes to a calendar.
+- **Only a person can book.** The assistant has no tool that books anything. It can only record a proposed time. The organizer's one-click confirm is the only path that writes to a calendar.
 - **The model sees free time, never the calendar.** Its only tool returns open slots for a date range. Event titles, attendees and busy reasons never reach the model, so it can't leak them.
 - **Code checks what the prompt can't guarantee.** Contact details the model records must appear in the conversation. When the organizer confirms, the slot is checked again against the live calendar before anything is booked.
 - **Replies run in the background.** Each message starts a background task, so a slow model call never blocks the page, and every model and tool call is traced in Langfuse.
-- **Tested as conversations, not functions.** Over 60 end-to-end tests drive the real chat in a browser: vague availability, timezone mix-ups, counter-offers, a participant who keeps changing their mind. A second model grades each reply against what it should have said.
+- **Tested as real conversations.** Over 60 end-to-end tests drive the real chat in a browser: vague availability, timezone mix-ups, counter-offers, a participant who keeps changing their mind. A second model grades each reply against what it should have said.
 
 | Part | Choice |
 |---|---|
@@ -64,19 +64,16 @@ Built and running end to end. The test of the hypothesis compares chat booking a
 
 | Metric | What it tests | Result |
 |---|---|---|
-| Share of people who book after opening the link | Too much choice delays booking | Pending |
-| Time from link opened to booked | Too much choice delays booking | Pending |
+| Share of people who book after opening the link | Whether people book at all | Pending |
+| Time from link opened to booked | Whether chat is faster | Pending |
 | Cancel or reschedule rate | An easy pick is an easy cancel | Pending |
 
 ## What I learned
 
-- **Choosing the model mattered more than rewording the prompt.** I tested five models on the same agent. One confirmed meetings it had no right to confirm. Another said "let me check" and then never checked. Traces showed both problems. Gemini 2.5 Flash gave the best balance of reliable tool calling and cost; Claude Sonnet was the most reliable but cost more than this needed.
-- **Without traces you're guessing.** A model can write a convincing reply and still skip the tool call behind it. Langfuse traces showed what the model actually did, not what it said it did.
+- **Choosing the model mattered more than rewording the prompt.** I tested five models on the same agent. One confirmed meetings it had no right to confirm; another said "let me check" and never checked. The replies read fine, and only the Langfuse traces showed the missing tool calls. Gemini 2.5 Flash gave the best mix of reliable tool calling and cost. Claude Sonnet was the most reliable but cost more than this needed.
 - **Spell out what counts as a yes.** The assistant offered 3:30 instead of 3:00, the participant replied with their email, and the model took that as agreement. Models infer intent from nearby actions, so the prompt now says plainly that sharing contact details is not accepting a new time.
-- **Check the model's output in code, not just in the prompt.** Telling it "don't invent contact details" wasn't enough: it still filled in emails like `sarah@example.com`. Models reach for the same fakes every time (`example.com`, `John Doe`, `555-1234`), so code blocks those and verifies that any email or phone number actually appears in the conversation.
-- **Give the model today's date.** Without it, "next Tuesday" lands on the wrong day.
-- **Tune the settings, not just the words.** At the default temperature the model got creative and invented details. Dropping it to 0.2 made replies factual and consistent, which matters more than charm when the output lands in a calendar.
-- **Links come from code, never from the model.** Asked to include a URL, the model will sometimes produce one that looks right and goes nowhere. Code inserts every link; the model only writes the words around it.
+- **Anything that must be right comes from code.** Told not to invent contact details, the model still wrote emails like `sarah@example.com`. Models reach for the same fakes every time (`example.com`, `John Doe`, `555-1234`), so code blocks them and checks that any email or phone number appears in the conversation. Links work the same way: code inserts every link, because the model sometimes writes one that looks right and goes nowhere.
+- **Small settings change behaviour.** Without today's date, "next Tuesday" landed on the wrong day. At the default temperature the model invented details; at 0.2 it stayed factual, which matters more than charm when the output lands in a calendar.
 
 ---
 
